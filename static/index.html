@@ -1,0 +1,468 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>StatsPack Analytics Lab</title>
+<style>
+:root{
+  --navy:#0d4d7a; --navy-dark:#093a5e; --ink:#1c2733; --muted:#6b7885;
+  --bg:#eef0f2; --card:#ffffff;
+  --teal:#00b89f; --blue:#2f7ef7; --pink:#e94d7a; --orange:#f5a531; --green:#0f9d68; --red:#c62828;
+  --line:#7b93f0;
+}
+*{box-sizing:border-box;margin:0}
+body{background:var(--bg);color:var(--ink);font:15px/1.45 "Lato","Segoe UI",system-ui,sans-serif}
+button{font:inherit;cursor:pointer}
+input,select{font:inherit;padding:8px 10px;border:1px solid #cfd6dd;border-radius:6px;background:#fff;width:100%}
+input:focus,select:focus,button:focus-visible{outline:2px solid var(--blue);outline-offset:1px}
+a{color:var(--blue)}
+@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+
+/* top bar */
+header{background:var(--navy);color:#fff;padding:10px 18px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+header .brand{font-family:Georgia,'Times New Roman',serif;font-size:19px;letter-spacing:.5px}
+header .brand b{font-weight:700}
+header .who{margin-left:auto;font-size:13px;opacity:.9;display:flex;align-items:center;gap:10px}
+header .who button{background:transparent;border:1px solid rgba(255,255,255,.5);color:#fff;border-radius:6px;padding:4px 12px}
+nav{background:#fff;border-bottom:1px solid #dde2e7;padding:0 18px;display:flex;gap:4px;overflow-x:auto}
+nav button{background:none;border:0;border-bottom:3px solid transparent;padding:12px 14px;color:var(--muted);font-weight:700;white-space:nowrap}
+nav button.on{color:var(--navy);border-bottom-color:var(--navy)}
+main{max-width:1240px;margin:0 auto;padding:18px}
+
+/* section banner — the navy plate from the VMS dashboard */
+.banner{background:var(--navy);color:#fff;text-align:center;border-radius:8px;
+  font-family:Georgia,'Times New Roman',serif;font-size:clamp(20px,3vw,30px);letter-spacing:3px;
+  padding:16px 10px;margin:6px 0 16px;box-shadow:0 2px 4px rgba(9,58,94,.25)}
+
+/* cards with the colored top edge */
+.grid{display:grid;gap:14px}
+.kpis{grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}
+.two{grid-template-columns:repeat(auto-fit,minmax(340px,1fr))}
+.card{background:var(--card);border-radius:10px;border-top:3px solid var(--teal);
+  box-shadow:0 1px 3px rgba(28,39,51,.08);padding:14px 16px;min-width:0}
+.card h3{font-size:14px;margin-bottom:8px}
+.card.t-teal{border-top-color:var(--teal)} .card.t-blue{border-top-color:var(--blue)}
+.card.t-pink{border-top-color:var(--pink)} .card.t-orange{border-top-color:var(--orange)}
+.card.t-green{border-top-color:var(--green)}
+.kpi{text-align:center;padding:16px 10px}
+.kpi .lbl{font-weight:700;font-size:14px}
+.kpi .val{font-size:38px;font-weight:800;margin-top:6px}
+.kpi .sub{font-size:12px;color:var(--muted);margin-top:2px}
+.kpi .val.red{color:var(--red)} .kpi .val.green{color:var(--green)}
+.arrow-up{color:var(--green)} .arrow-down{color:var(--red)}
+
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th{background:#f2f4f6;text-align:left;padding:8px;font-size:12.5px;color:#43505c}
+td{padding:8px;border-bottom:1px dashed #e2e6ea}
+.badge{display:inline-block;background:#fdecec;color:var(--red);border-radius:99px;padding:2px 10px;font-size:12px;font-weight:700}
+.badge.ok{background:#e8f6ef;color:var(--green)}
+.pill{display:inline-block;border-radius:99px;padding:2px 10px;font-size:12px;font-weight:700;background:#eef2ff;color:#3a54c4}
+.empty{color:var(--muted);text-align:center;padding:22px 8px;font-size:14px}
+
+.btn{background:var(--navy);color:#fff;border:0;border-radius:6px;padding:9px 16px;font-weight:700}
+.btn.ghost{background:#fff;color:var(--navy);border:1px solid var(--navy)}
+.btn.small{padding:5px 10px;font-size:12.5px}
+.btn.warn{background:var(--red)}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.note{font-size:12.5px;color:var(--muted)}
+code,pre{font:12.5px/1.5 ui-monospace,Consolas,monospace;background:#0f1d2a;color:#d8e6f2;border-radius:8px}
+pre{padding:12px 14px;overflow:auto}
+code.inline{background:#eef2f5;color:#0d4d7a;padding:2px 6px;border-radius:4px}
+.msg{border-radius:8px;padding:10px 12px;font-size:13.5px;margin:8px 0;display:none}
+.msg.err{display:block;background:#fdecec;color:#8c1f1f}
+.msg.ok{display:block;background:#e8f6ef;color:#0c5c3d}
+
+/* login */
+.login-wrap{min-height:100vh;display:grid;place-items:center;padding:20px;
+  background:linear-gradient(160deg,#0d4d7a 0%,#093a5e 55%,#062a45 100%)}
+.login{background:#fff;border-radius:14px;padding:34px 30px;width:100%;max-width:400px;box-shadow:0 18px 50px rgba(0,0,0,.35)}
+.login h1{font-family:Georgia,serif;color:var(--navy);font-size:24px;letter-spacing:1px;text-align:center}
+.login p.tag{text-align:center;color:var(--muted);font-size:13px;margin:6px 0 20px}
+.login label{font-size:13px;font-weight:700;display:block;margin:12px 0 4px}
+.login .btn{width:100%;margin-top:18px;padding:11px}
+.login .demo{margin-top:16px;font-size:12.5px;color:var(--muted);text-align:center}
+
+.chart-note{font-size:11.5px;color:var(--muted);margin-top:4px;text-align:right}
+svg text{font-family:"Lato","Segoe UI",sans-serif}
+.refresh{font-size:12px;color:var(--muted)}
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+"use strict";
+const $ = (s, el=document) => el.querySelector(s);
+const S = { token: sessionStorage.getItem("tok") || "", role: sessionStorage.getItem("role") || "",
+            name: sessionStorage.getItem("name") || "", tab: "overview", clientId: null, clients: [], timer: null };
+
+async function api(path, body, method){
+  const r = await fetch(path, { method: method || (body ? "POST" : "GET"),
+    headers: { "Content-Type": "application/json", ...(S.token ? { Authorization: "Bearer " + S.token } : {}) },
+    body: body ? JSON.stringify(body) : undefined });
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(d.error || ("Request failed (" + r.status + ")"));
+  return d;
+}
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmtDT = s => s ? s.replace("T", " ").slice(0, 16) : "—";
+
+/* ---------------- tiny SVG chart kit ---------------- */
+function lineChart(series, {w=560, h=230, unit=""}={}){
+  if (!series.length) return '<div class="empty">No data yet</div>';
+  const pad = {l:44, r:18, t:22, b:44};
+  const max = Math.max(...series.map(p=>p.v), 1);
+  const X = i => pad.l + i * (w - pad.l - pad.r) / Math.max(series.length - 1, 1);
+  const Y = v => pad.t + (1 - v / max) * (h - pad.t - pad.b);
+  let path = "";
+  series.forEach((p,i)=>{
+    const x=X(i), y=Y(p.v);
+    if(!i){ path=`M${x},${y}`; return; }
+    const px=X(i-1), py=Y(series[i-1].v), cx=(px+x)/2;
+    path += ` C${cx},${py} ${cx},${y} ${x},${y}`;
+  });
+  const dots = series.map((p,i)=>`<circle cx="${X(i)}" cy="${Y(p.v)}" r="4.5" fill="#fff" stroke="var(--line)" stroke-width="2"/>
+    <circle cx="${X(i)}" cy="${Y(p.v)}" r="1.8" fill="var(--line)"/>
+    <text x="${X(i)}" y="${Y(p.v)-10}" font-size="11" text-anchor="middle" fill="#333">${esc(p.v+unit)}</text>`).join("");
+  const labels = series.map((p,i)=>`<text x="${X(i)}" y="${h-16}" font-size="11" text-anchor="middle" fill="#555">${esc(p.l)}</text>`).join("");
+  const gy = [0,.5,1].map(f=>{const y=Y(max*f);return `<line x1="${pad.l}" y1="${y}" x2="${w-pad.r}" y2="${y}" stroke="#e4e8ec" stroke-dasharray="3 4"/>
+    <text x="${pad.l-8}" y="${y+4}" font-size="10.5" text-anchor="end" fill="#777">${Math.round(max*f)}</text>`}).join("");
+  return `<svg viewBox="0 0 ${w} ${h}" role="img" style="width:100%;height:auto">${gy}
+    <path d="${path}" fill="none" stroke="var(--line)" stroke-width="2.5"/>${dots}${labels}</svg>`;
+}
+function hbar(items, {w=560, colors=null, unit="", pct=false}={}){
+  if (!items.length) return '<div class="empty">No data yet</div>';
+  const total = items.reduce((a,b)=>a+b.c,0) || 1;
+  const rowH=36, pad={l:150,r:26,t:6}, h=pad.t+items.length*rowH+8;
+  const max=Math.max(...items.map(i=>i.c),1);
+  const cols = colors || ["#e94d7a","#c47ba3","#6f9bc9","#59b6db","#3fc9e0"];
+  return `<svg viewBox="0 0 ${w} ${h}" role="img" style="width:100%;height:auto">` + items.map((it,i)=>{
+    const y=pad.t+i*rowH, bw=Math.max((w-pad.l-pad.r)*it.c/max, 26);
+    const lab = pct ? Math.round(it.c/total*100)+"%" : it.c+unit;
+    return `<text x="${pad.l-8}" y="${y+21}" font-size="12" text-anchor="end" fill="#333">${esc(String(it.label).slice(0,20))}</text>
+      <rect x="${pad.l}" y="${y+4}" width="${bw}" height="${rowH-12}" rx="3" fill="${cols[i%cols.length]}"/>
+      <text x="${pad.l+bw/2}" y="${y+20}" font-size="11.5" text-anchor="middle" fill="#1c2733" font-weight="700">${lab}</text>`;
+  }).join("") + "</svg>";
+}
+function vbar(items, {w=560,h=250,unit=""}={}){
+  if (!items.length) return '<div class="empty">No data yet</div>';
+  const pad={l:46,r:14,t:26,b:66}; const max=Math.max(...items.map(i=>i.c),1);
+  const bw=(w-pad.l-pad.r)/items.length;
+  const cols=["#e94d7a","#b087b4","#8b9bd6","#59a8d6","#3fc9e0"];
+  return `<svg viewBox="0 0 ${w} ${h}" role="img" style="width:100%;height:auto">` + items.map((it,i)=>{
+    const bh=(h-pad.t-pad.b)*it.c/max, x=pad.l+i*bw+bw*0.14, y=h-pad.b-bh;
+    return `<rect x="${x}" y="${y}" width="${bw*0.72}" height="${bh}" rx="3" fill="${cols[i%cols.length]}"/>
+      <text x="${x+bw*0.36}" y="${y+16>h-pad.b?y-6:y+18}" font-size="11" text-anchor="middle" fill="#1c2733" font-weight="700">${it.c}${unit}</text>
+      <text x="${x+bw*0.36}" y="${h-pad.b+14}" font-size="10.5" text-anchor="end" fill="#555" transform="rotate(-32 ${x+bw*0.36} ${h-pad.b+14})">${esc(String(it.label).slice(0,16))}</text>`;
+  }).join("") + "</svg>";
+}
+function donut(items, {w=560,h=250}={}){
+  if (!items.length) return '<div class="empty">Nobody is on the premises right now</div>';
+  const total=items.reduce((a,b)=>a+b.c,0), cx=w/2, cy=h/2, R=Math.min(w,h)/2-26, r=R*0.58;
+  const cols=["#3fc9e0","#e94d7a","#b087b4","#8b9bd6","#f5a531","#0f9d68","#59a8d6","#c47ba3"];
+  let a0=-Math.PI/2, out="";
+  items.forEach((it,i)=>{
+    const a1=a0+2*Math.PI*it.c/total, big=(a1-a0)>Math.PI?1:0;
+    const p=(a,rr)=>[cx+rr*Math.cos(a),cy+rr*Math.sin(a)];
+    const [x0,y0]=p(a0,R),[x1,y1]=p(a1,R),[x2,y2]=p(a1,r),[x3,y3]=p(a0,r);
+    out+=`<path d="M${x0},${y0} A${R},${R} 0 ${big} 1 ${x1},${y1} L${x2},${y2} A${r},${r} 0 ${big} 0 ${x3},${y3} Z" fill="${cols[i%cols.length]}"/>`;
+    const mid=(a0+a1)/2,[lx,ly]=p(mid,R+14);
+    out+=`<text x="${lx}" y="${ly}" font-size="11" text-anchor="${lx>cx?"start":"end"}" fill="#333">${esc(it.label)} (${it.c})</text>`;
+    a0=a1;
+  });
+  return `<svg viewBox="0 0 ${w} ${h}" role="img" style="width:100%;height:auto">${out}
+    <text x="${cx}" y="${cy+5}" font-size="16" font-weight="800" text-anchor="middle" fill="#1c2733">${total}</text></svg>`;
+}
+
+/* ---------------- login ---------------- */
+function renderLogin(err){
+  document.body.innerHTML = `<div class="login-wrap"><form class="login" id="loginForm">
+    <h1>StatsPack <b>Analytics&nbsp;Lab</b></h1>
+    <p class="tag">Analytical summary for your Visitor Management System</p>
+    <div class="msg err" ${err?'style="display:block"':""}>${esc(err||"")}</div>
+    <label for="em">Email</label><input id="em" type="email" autocomplete="username" required>
+    <label for="pw">Password</label><input id="pw" type="password" autocomplete="current-password" required>
+    <button class="btn" type="submit">Sign in</button>
+    <p class="demo">Demo — Super: admin@statspack.co.ls / super123 · Client: admin@demo.client / admin123</p>
+  </form></div>`;
+  $("#loginForm").addEventListener("submit", async e=>{
+    e.preventDefault();
+    try{
+      const d = await api("/api/login", { email:$("#em").value, password:$("#pw").value });
+      S.token=d.token; S.role=d.role; S.name=d.name;
+      sessionStorage.setItem("tok",d.token); sessionStorage.setItem("role",d.role); sessionStorage.setItem("name",d.name);
+      S.tab = d.role==="super" ? "clients" : "overview";
+      boot();
+    }catch(ex){ renderLogin(ex.message); }
+  });
+}
+
+/* ---------------- shell ---------------- */
+function shell(){
+  const tabs = [];
+  if (S.role==="super") tabs.push(["clients","Clients"]);
+  tabs.push(["overview","Bird's Eye View"],["analysis","In-Depth Analysis"],["live","Live from the Premises"]);
+  tabs.push(["connection","Data & Connection"]);
+  const picker = S.role==="super" ? `<select id="clientPick" style="width:auto;min-width:210px" aria-label="Client">
+      ${S.clients.map(c=>`<option value="${c.id}" ${c.id==S.clientId?"selected":""}>${esc(c.name)}${c.active?"":" (suspended)"}</option>`).join("")}
+    </select>` : "";
+  document.body.innerHTML = `
+    <header><span class="brand">StatsPack <b>Analytics Lab</b></span>${picker}
+      <span class="who">${esc(S.name)} · ${S.role==="super"?"StatsPack super user":"Client admin"}
+      <button id="out">Sign out</button></span></header>
+    <nav>${tabs.map(([k,l])=>`<button data-t="${k}" class="${S.tab===k?"on":""}">${l}</button>`).join("")}</nav>
+    <main id="view"></main>`;
+  $("#out").onclick = ()=>{ sessionStorage.clear(); location.reload(); };
+  document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>{ S.tab=b.dataset.t; draw(); });
+  const cp=$("#clientPick"); if(cp) cp.onchange=()=>{ S.clientId=+cp.value; draw(); };
+}
+const q = () => S.role==="super" ? "?client_id="+S.clientId : "";
+function stopTimer(){ if(S.timer){ clearInterval(S.timer); S.timer=null; } }
+
+async function draw(){
+  stopTimer(); shell();
+  const v=$("#view");
+  try{
+    if (S.tab==="overview") await drawOverview(v);
+    else if (S.tab==="analysis") await drawAnalysis(v);
+    else if (S.tab==="live") await drawLive(v);
+    else if (S.tab==="connection") await drawConnection(v);
+    else if (S.tab==="clients") await drawClients(v);
+  }catch(ex){
+    if (/log in/i.test(ex.message)) { sessionStorage.clear(); return renderLogin("Session expired — sign in again"); }
+    v.innerHTML = `<div class="msg err" style="display:block">${esc(ex.message)}</div>`;
+  }
+}
+
+/* ---------------- Bird's Eye View ---------------- */
+async function drawOverview(v){
+  const d = await api("/api/stats/overview"+q());
+  const ch = d.change_pct;
+  const cmp = ch===null ? `<div class="kpi"><span class="lbl">Visitors compared to Last Month</span><div class="val">—</div>
+      <div class="sub">No visits recorded last month</div></div>`
+    : `<div class="kpi"><span class="lbl">Visitors compared to Last Month</span>
+       <div class="sub">${esc(d.this_month.label)}: ${d.this_month.count}</div>
+       <div class="val ${ch<0?"red":"green"}">${Math.abs(ch)}% <span class="${ch<0?"arrow-down":"arrow-up"}">${ch<0?"↓":"↑"}</span></div>
+       <div class="sub">${esc(d.last_month.label)}: ${d.last_month.count}</div></div>`;
+  v.innerHTML = `
+   <div class="banner">BIRD'S EYE VIEW</div>
+   <div class="grid kpis">
+     <div class="card t-teal kpi"><span class="lbl">Total Visitors Till Date</span><div class="val">${d.total}</div></div>
+     <div class="card t-blue kpi"><span class="lbl">Unique Visitors Till Date</span><div class="val">${d.unique}</div></div>
+     <div class="card t-pink kpi"><span class="lbl">Visitors Today</span><div class="val">${d.today}</div></div>
+     <div class="card t-orange kpi"><span class="lbl">Ongoing Visits</span><div class="val">${d.ongoing}</div></div>
+     <div class="card t-green">${cmp}</div>
+     <div class="card t-teal kpi"><span class="lbl">Average Visits each Day</span><div class="val">${d.avg_per_day}</div></div>
+     <div class="card t-blue kpi"><span class="lbl">Average Visit Duration</span><div class="val">${d.avg_duration} <span style="font-size:20px">mins</span></div></div>
+     <div class="card t-pink kpi"><span class="lbl">Highest Visits Recorded</span>
+       <div class="val red">${d.highest?d.highest.count:"—"}</div><div class="sub">${d.highest?"On "+esc(d.highest.date):""}</div></div>
+     <div class="card t-orange kpi"><span class="lbl">Lowest Visits Recorded</span>
+       <div class="val green">${d.lowest?d.lowest.count:"—"}</div><div class="sub">${d.lowest?"On "+esc(d.lowest.date):""}</div></div>
+   </div>
+   <div class="grid two" style="margin-top:14px">
+     <div class="card t-orange"><h3>Monthly Footfall: Overall</h3>
+       ${lineChart(d.monthly.map(m=>({l:m.month,v:m.count})))}</div>
+     <div class="card t-green"><h3>Current Month's Footfall</h3>
+       ${lineChart(d.current_month_daily.map(x=>({l:x.d.slice(8)+" "+d.this_month.label.slice(0,3),v:x.c})))}</div>
+     <div class="card t-blue"><h3>Top 5 Regions Visited</h3>${hbar(d.top_regions.map(r=>({label:r.label,c:r.c})),{pct:true})}</div>
+     <div class="card t-pink"><h3>Top 5 Purposes of Visit</h3>${hbar(d.top_purposes.map(r=>({label:r.label,c:r.c})),{pct:true})}</div>
+   </div>`;
+}
+
+/* ---------------- In-Depth ---------------- */
+async function drawAnalysis(v){
+  const d = await api("/api/stats/analysis"+q());
+  v.innerHTML = `
+   <div class="banner">IN-DEPTH ANALYSIS</div>
+   <div class="grid two">
+     <div class="card t-teal"><h3>Regions and Visitors</h3>${hbar(d.region_visitors,{colors:["#5b7fd4","#7b93f0","#9aa9e8","#b9c3ef","#d5dbf5","#5b7fd4","#7b93f0","#9aa9e8"]})}</div>
+     <div class="card t-blue"><h3>Regions with high Visit Duration</h3>${hbar(d.region_duration,{unit:" mins",colors:["#f5a531","#f8bb5e","#0f9d68","#54b98d","#8fd4b4","#f5a531","#f8bb5e"]})}</div>
+     <div class="card t-pink"><h3>Top 5 Departments receiving the most Visitor Footfall</h3>${hbar(d.dept_footfall,{pct:true})}</div>
+     <div class="card t-orange"><h3>Departments taking the most time during Visits</h3>
+       ${lineChart(d.dept_duration.map(x=>({l:String(x.label).slice(0,12),v:x.c})),{unit:" m"})}</div>
+     <div class="card t-orange"><h3>Visits taking the most time</h3>${vbar(d.purpose_duration,{unit:" mins"})}</div>
+     <div class="card t-green"><h3>Hours with highest Visitor Footfall</h3>
+       ${lineChart(d.hourly.map(x=>({l:(x.hour%12||12)+(x.hour<12?" AM":" PM"),v:x.c})))}</div>
+   </div>`;
+}
+
+/* ---------------- Live ---------------- */
+async function drawLive(v){
+  const render = async () => {
+    const d = await api("/api/stats/live"+q());
+    const rows = d.ongoing.map(o=>`<tr><td>${esc(o.region)}</td><td>${esc(o.town)}</td><td>${esc(o.host_department)}</td>
+      <td>${esc(o.id_number)}</td><td>${esc(o.visitor_name)}</td><td>${esc(o.contact)}</td>
+      <td>${esc(o.purpose)}</td><td>${o.elapsed} mins</td></tr>`).join("");
+    const exc = d.exceeding.map(o=>`<tr><td>${esc(o.region)}</td><td>${esc(o.town)}</td><td>${esc(o.host_department)}</td>
+      <td>${esc(o.visitor_name)}</td><td><span class="badge">Ongoing</span></td><td>${o.elapsed} mins</td></tr>`).join("");
+    $("#view").innerHTML = `
+     <div class="banner">LIVE FROM THE PREMISES</div>
+     <p class="refresh">Auto-refreshes every 15 seconds · Last updated ${new Date().toLocaleTimeString()}</p>
+     <div class="grid two">
+       <div class="card t-blue"><h3>Purpose for Ongoing Visits</h3>${donut(d.purposes)}</div>
+       <div class="card t-teal"><h3>Ongoing Visits by Region</h3>
+         ${hbar(Object.entries(d.ongoing.reduce((a,o)=>{a[o.region]=(a[o.region]||0)+1;return a;},{}))
+                .map(([label,c])=>({label,c})),{colors:["#0f9d68","#54b98d","#8fd4b4","#bfe7d6"]})}</div>
+     </div>
+     <div class="card t-pink" style="margin-top:14px"><h3>Current On-Premises Visitors</h3>
+       ${d.ongoing.length?`<div style="overflow-x:auto"><table><thead><tr><th>Region</th><th>Town</th><th>Host Department</th>
+        <th>ID Number</th><th>Visitor /User Name</th><th>Contact Number</th><th>Purpose</th><th>Elapsed</th></tr></thead>
+        <tbody>${rows}</tbody></table></div>`:'<div class="empty">Nobody is on the premises right now</div>'}</div>
+     <div class="card t-orange" style="margin-top:14px"><h3>Visitors Exceeding Allowed Duration (${d.max_mins} mins)</h3>
+       ${d.exceeding.length?`<div style="overflow-x:auto"><table><thead><tr><th>Region</th><th>Town</th><th>Host Department</th>
+        <th>Visitor /User Name</th><th>Visit Status</th><th>Visit Duration</th></tr></thead>
+        <tbody>${exc}</tbody></table></div>`:'<div class="empty">No visitor has exceeded the allowed duration</div>'}</div>`;
+  };
+  await render();
+  S.timer = setInterval(()=>{ if(S.tab==="live") render().catch(()=>{}); }, 15000);
+}
+
+/* ---------------- Data & Connection ---------------- */
+async function drawConnection(v){
+  const d = await api("/api/connection"+q());
+  const base = location.origin;
+  v.innerHTML = `
+   <div class="banner">DATA &amp; CONNECTION</div>
+   <div class="grid two">
+    <div class="card t-blue"><h3>Connect the VMS (real-time)</h3>
+      <p class="note">Point the VMS real-time export at this endpoint. Every check-in and check-out it sends
+      appears here instantly — no manual files. Re-sending the same <code class="inline">visit_id</code> updates
+      that visit, which is how a checkout lands.</p>
+      <p style="margin:10px 0 4px;font-weight:700;font-size:13px">API key</p>
+      <div class="row"><code class="inline" id="apiKey" style="word-break:break-all">${esc(d.api_key)}</code>
+        <button class="btn small ghost" id="copyKey">Copy</button></div>
+      <p style="margin:12px 0 4px;font-weight:700;font-size:13px">Push a visit (JSON)</p>
+<pre>curl -X POST ${base}/ingest/visits \\
+  -H "X-API-Key: ${esc(d.api_key)}" \\
+  -H "Content-Type: application/json" \\
+  -d '{"visit_id":"VMS-2041","visitor_name":"Thabo M.",
+       "region":"Maseru","town":"Maseru",
+       "host_department":"Customer Service",
+       "purpose":"Enquiry","check_in":"2026-07-17T09:05:00"}'</pre>
+      <p style="margin:10px 0 4px;font-weight:700;font-size:13px">Or stream the VMS CSV export as-is</p>
+<pre>curl -X POST ${base}/ingest/visits \\
+  -H "X-API-Key: ${esc(d.api_key)}" \\
+  -H "Content-Type: text/csv" \\
+  --data-binary @vms_export.csv</pre>
+      <p class="note">Test the link any time: <code class="inline">GET ${base}/ingest/ping</code> with the same key.</p>
+    </div>
+    <div>
+     <div class="card t-teal"><h3>Backfill: upload a CSV export</h3>
+      <p class="note">For history that predates the live connection. Headers are matched flexibly
+      (visit_id, visitor name, region, town, department, purpose, check_in, check_out…).</p>
+      <div class="msg" id="upMsg"></div>
+      <input type="file" id="csvFile" accept=".csv,text/csv" aria-label="CSV file">
+      <button class="btn" id="upBtn" style="margin-top:10px">Upload CSV</button>
+     </div>
+     <div class="card t-orange" style="margin-top:14px"><h3>Allowed visit duration</h3>
+      <p class="note">Ongoing visits longer than this appear in “Visitors Exceeding Allowed Duration”.</p>
+      <div class="row" style="margin-top:8px"><input id="maxMins" type="number" min="5" max="720" value="${d.max_visit_mins}" style="width:110px"> mins
+      <button class="btn small" id="saveMins">Save</button></div>
+      <div class="msg" id="minsMsg"></div>
+     </div>
+     <div class="card t-green" style="margin-top:14px"><h3>Recent data received</h3>
+      ${d.log.length?`<table><thead><tr><th>When</th><th>Source</th><th>Rows</th><th>New</th><th>Updated</th><th>Errors</th></tr></thead>
+       <tbody>${d.log.map(l=>`<tr><td>${fmtDT(l.ts)}</td><td>${esc(l.source)}</td><td>${l.rows_in}</td>
+        <td>${l.inserted}</td><td>${l.updated}</td><td>${l.errors?`<span class="badge">${l.errors}</span>`:0}</td></tr>`).join("")}</tbody></table>`
+       :'<div class="empty">Nothing received yet — connect the VMS or upload a CSV</div>'}
+     </div>
+    </div>
+   </div>`;
+  $("#copyKey").onclick = ()=>{ navigator.clipboard.writeText(d.api_key); $("#copyKey").textContent="Copied"; };
+  $("#saveMins").onclick = async ()=>{
+    const m=$("#minsMsg");
+    try{ await api("/api/connection/settings"+q(),{max_visit_mins:+$("#maxMins").value}); m.className="msg ok"; m.textContent="Saved"; }
+    catch(ex){ m.className="msg err"; m.textContent=ex.message; }
+  };
+  $("#upBtn").onclick = async ()=>{
+    const f=$("#csvFile").files[0], m=$("#upMsg");
+    if(!f){ m.className="msg err"; m.textContent="Choose a CSV file first"; return; }
+    try{
+      const text = await f.text();
+      const r = await api("/api/connection/upload"+q(), {csv:text});
+      m.className="msg ok"; m.textContent=`Received ${r.received} rows — ${r.inserted} new, ${r.updated} updated, ${r.errors} errors`;
+    }catch(ex){ m.className="msg err"; m.textContent=ex.message; }
+  };
+}
+
+/* ---------------- Super: Clients ---------------- */
+async function drawClients(v){
+  const d = await api("/api/super/clients");
+  S.clients = d.clients;
+  v.innerHTML = `
+   <div class="banner">CLIENT CONSOLE</div>
+   <div class="card t-blue"><h3>Add a client</h3>
+    <div class="msg" id="cMsg"></div>
+    <div class="row"><input id="cName" placeholder="Client / company name" style="max-width:340px">
+     <button class="btn" id="cAdd">Create client</button></div>
+    <p class="note">Creating a client issues an API key. Give the key to the client's VMS installation, then
+     add an admin login so they can view their dashboards.</p></div>
+   <div class="card t-teal" style="margin-top:14px"><h3>Clients</h3>
+    <div style="overflow-x:auto"><table><thead><tr><th>Client</th><th>Status</th><th>Visits</th><th>On premises</th>
+     <th>Admins</th><th>Last data received</th><th>API key</th><th></th></tr></thead><tbody>
+    ${d.clients.map(c=>`<tr>
+      <td><b>${esc(c.name)}</b></td>
+      <td>${c.active?'<span class="badge ok">Active</span>':'<span class="badge">Suspended</span>'}</td>
+      <td>${c.visits}</td><td>${c.ongoing}</td><td>${c.admins}</td>
+      <td>${fmtDT(c.last_ingest)}</td>
+      <td><code class="inline" style="word-break:break-all">${esc(c.api_key)}</code></td>
+      <td style="white-space:nowrap">
+        <button class="btn small ghost" data-view="${c.id}">View dashboards</button>
+        <button class="btn small ghost" data-admins="${c.id}" data-name="${esc(c.name)}">Admins</button>
+        <button class="btn small ghost" data-rotate="${c.id}">Rotate key</button>
+        <button class="btn small ${c.active?"warn":""}" data-toggle="${c.id}">${c.active?"Suspend":"Reactivate"}</button>
+      </td></tr>`).join("")}
+    </tbody></table></div></div>
+   <div id="adminPanel"></div>`;
+  $("#cAdd").onclick = async ()=>{
+    const m=$("#cMsg");
+    try{ await api("/api/super/clients",{name:$("#cName").value}); draw(); }
+    catch(ex){ m.className="msg err"; m.textContent=ex.message; }
+  };
+  v.querySelectorAll("[data-view]").forEach(b=>b.onclick=()=>{ S.clientId=+b.dataset.view; S.tab="overview"; draw(); });
+  v.querySelectorAll("[data-toggle]").forEach(b=>b.onclick=async()=>{ await api(`/api/super/clients/${b.dataset.toggle}/toggle`,{},"POST"); draw(); });
+  v.querySelectorAll("[data-rotate]").forEach(b=>b.onclick=async()=>{
+    if(confirm("Rotate this client's API key? The old key stops working immediately.")){
+      await api(`/api/super/clients/${b.dataset.rotate}/rotate_key`,{},"POST"); draw(); } });
+  v.querySelectorAll("[data-admins]").forEach(b=>b.onclick=()=>showAdmins(+b.dataset.admins, b.dataset.name));
+}
+async function showAdmins(cid, cname){
+  const d = await api(`/api/super/clients/${cid}/admins`);
+  $("#adminPanel").innerHTML = `
+   <div class="card t-pink" style="margin-top:14px"><h3>Admin logins — ${esc(cname)}</h3>
+    <div class="msg" id="aMsg"></div>
+    <div class="row"><input id="aName" placeholder="Name" style="max-width:180px">
+     <input id="aEmail" type="email" placeholder="Email" style="max-width:230px">
+     <input id="aPw" type="password" placeholder="Password (6+ chars)" style="max-width:200px">
+     <button class="btn" id="aAdd">Add admin</button></div>
+    ${d.admins.length?`<table style="margin-top:10px"><thead><tr><th>Name</th><th>Email</th><th>Status</th><th></th></tr></thead><tbody>
+     ${d.admins.map(a=>`<tr><td>${esc(a.name)}</td><td>${esc(a.email)}</td>
+      <td>${a.active?'<span class="badge ok">Active</span>':'<span class="badge">Disabled</span>'}</td>
+      <td><button class="btn small ghost" data-tg="${a.id}">${a.active?"Disable":"Enable"}</button></td></tr>`).join("")}
+    </tbody></table>`:'<div class="empty">No admin logins yet — add the first one above</div>'}
+   </div>`;
+  $("#aAdd").onclick = async ()=>{
+    const m=$("#aMsg");
+    try{ await api(`/api/super/clients/${cid}/admins`,{name:$("#aName").value,email:$("#aEmail").value,password:$("#aPw").value});
+         showAdmins(cid,cname); }
+    catch(ex){ m.className="msg err"; m.textContent=ex.message; }
+  };
+  document.querySelectorAll("[data-tg]").forEach(b=>b.onclick=async()=>{ await api(`/api/super/admins/${b.dataset.tg}/toggle`,{},"POST"); showAdmins(cid,cname); });
+}
+
+/* ---------------- boot ---------------- */
+async function boot(){
+  if(!S.token) return renderLogin();
+  if(S.role==="super"){
+    try{ const d = await api("/api/super/clients"); S.clients=d.clients;
+         if(!S.clientId && d.clients.length) S.clientId=d.clients[0].id;
+         if(!S.tab) S.tab="clients";
+    }catch(ex){ sessionStorage.clear(); return renderLogin(); }
+  } else { S.tab = S.tab==="clients" ? "overview" : S.tab; }
+  draw();
+}
+boot();
+</script>
+</body>
+</html>
