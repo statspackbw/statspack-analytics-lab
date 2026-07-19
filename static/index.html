@@ -1,0 +1,594 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>StatsPack Analytics Lab</title>
+<style>
+:root{
+  --slate:#3d5666; --slate-deep:#35505f; --ink:#25333d; --muted:#7d8fa0;
+  --mint:#cfe8e6; --mint-soft:#e7f4f2; --teal:#5cbcb6; --amber:#e0a83f; --coral:#dd6b4d;
+  --bg:#eef1f4; --card:#ffffff; --line-blue:#7b93f0; --ok:#2f9e77; --bad:#c65644;
+}
+*{box-sizing:border-box;margin:0}
+body{background:var(--bg);color:var(--ink);
+  font:15px/1.5 "Trebuchet MS","Lato","Segoe UI",system-ui,sans-serif}
+button{font:inherit;cursor:pointer}
+input,select{font:inherit;padding:9px 12px;border:1.5px solid #c4d0d8;border-radius:9px;background:#fff;width:100%;color:var(--ink)}
+input:focus,select:focus,button:focus-visible{outline:2px solid var(--teal);outline-offset:1px}
+a{color:var(--slate)}
+@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+
+/* ============ app shell ============ */
+.shell{display:grid;grid-template-columns:290px 1fr;min-height:100vh}
+aside{background:#fff;box-shadow:2px 0 8px rgba(37,51,61,.06);display:flex;flex-direction:column;
+  padding:14px 14px 18px;position:sticky;top:0;height:100vh;overflow-y:auto}
+.profile{background:var(--mint);border-radius:16px;padding:22px 14px 18px;text-align:center}
+.profile img{height:56px;display:block;margin:0 auto 4px}
+.profile .wm{font-size:13px;font-weight:800;letter-spacing:4px;color:var(--slate)}
+.profile .wm span{color:#8fa8b2}
+.profile .nm{font-size:19px;font-weight:800;color:var(--slate);margin-top:12px}
+.profile .org{font-size:14px;font-weight:700;color:var(--slate);opacity:.85;margin-top:2px}
+.profile .em{font-size:12.5px;color:#5a7481;margin-top:2px;word-break:break-all}
+.navsec{font-size:12px;font-weight:800;letter-spacing:2.5px;color:#9aabb8;margin:22px 10px 8px;
+  display:flex;justify-content:space-between;align-items:center}
+.navsec::after{content:"▾";font-size:9px;color:#c1ccd5}
+.nitem{display:flex;align-items:center;gap:14px;width:calc(100% + 28px);margin-left:-14px;
+  padding:13px 24px;border:0;background:none;color:var(--ink);font-size:16.5px;font-weight:700;text-align:left;
+  border-radius:0}
+.nitem svg{width:22px;height:22px;flex:0 0 22px;fill:none;stroke:var(--amber);stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.nitem:hover{background:var(--mint-soft)}
+.nitem.on{background:var(--slate);color:#fff}
+.nitem.on svg{stroke:#fff}
+.sideout{margin-top:auto;padding-top:18px}
+.sideout .btn{width:100%;border-radius:12px;padding:13px;font-size:16px}
+.vtag{text-align:center;font-size:13px;color:#8aa0ad;margin-top:12px}
+.clientbox{margin:14px 4px 0}
+.clientbox label{font-size:11.5px;font-weight:800;letter-spacing:1.5px;color:#9aabb8;display:block;margin:0 6px 4px}
+
+/* top bar */
+.topbar{background:var(--slate);color:#fff;display:flex;align-items:center;justify-content:center;
+  gap:12px;padding:20px 16px;position:relative}
+.topbar h1{font-size:23px;font-weight:800;display:flex;align-items:center;gap:12px}
+.topbar h1 svg{width:24px;height:24px;fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.burger{display:none;position:absolute;left:14px;top:50%;transform:translateY(-50%);
+  background:none;border:0;color:#fff;font-size:24px;padding:6px}
+main{padding:26px 28px 40px;max-width:1500px;width:100%}
+
+/* KPI cards — colored label + underline + big number */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:20px}
+.kpi{background:var(--card);border-radius:16px;box-shadow:0 4px 14px rgba(37,51,61,.07);padding:20px 24px}
+.kpi .lbl{font-size:17px;font-weight:800}
+.kpi .rule{height:3px;border-radius:2px;margin:12px 0 18px}
+.kpi .val{font-size:36px;font-weight:800;line-height:1.1}
+.kpi .sub{font-size:12.5px;color:var(--muted);margin-top:4px}
+.k-slate .lbl{color:var(--slate)} .k-slate .rule{background:var(--slate)}
+.k-teal  .lbl{color:var(--teal)}  .k-teal  .rule{background:var(--teal)}
+.k-amber .lbl{color:var(--amber)} .k-amber .rule{background:var(--amber)}
+.k-coral .lbl{color:var(--coral)} .k-coral .rule{background:var(--coral)}
+.val.up{color:var(--ok)} .val.down{color:var(--bad)}
+
+/* content cards + glance tables */
+.panel{background:var(--card);border-radius:18px;box-shadow:0 4px 14px rgba(37,51,61,.07);
+  padding:22px 26px;margin-top:24px;min-width:0}
+.panel>h2{font-size:21px;font-weight:800;color:var(--slate);margin-bottom:14px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:24px;margin-top:24px}
+.grid2 .panel{margin-top:0}
+table{width:100%;border-collapse:collapse}
+th{text-align:left;padding:10px 12px;font-size:14px;letter-spacing:1px;color:var(--slate);
+   border-bottom:2px solid #e3e9ee;font-weight:800}
+td{padding:14px 12px;border-bottom:1.5px solid #eef2f5;font-size:15px}
+td.b{font-weight:800}
+tr:last-child td{border-bottom:0}
+.chip{display:inline-block;background:#e2eaf0;color:var(--slate);border-radius:999px;
+  padding:3px 14px;font-size:13px;font-weight:700;margin-left:8px}
+.score{display:inline-block;background:#d9efe7;color:var(--ok);border-radius:8px;padding:3px 12px;font-weight:800;font-size:14px}
+.score.bad{background:#f7e3dd;color:var(--bad)}
+.empty{color:var(--muted);text-align:center;padding:24px 8px}
+
+.btn{background:var(--slate);color:#fff;border:0;border-radius:10px;padding:10px 18px;font-weight:800}
+.btn.ghost{background:#fff;color:var(--slate);border:1.5px solid var(--slate)}
+.btn.small{padding:6px 12px;font-size:13px;border-radius:8px}
+.btn.warn{background:var(--coral)}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.note{font-size:13px;color:var(--muted)}
+code,pre{font:12.5px/1.55 ui-monospace,Consolas,monospace;background:#2c3f4b;color:#dbe8f0;border-radius:10px}
+pre{padding:13px 15px;overflow:auto}
+code.inline{background:#e8eef2;color:var(--slate);padding:2px 7px;border-radius:5px}
+.msg{border-radius:10px;padding:10px 13px;font-size:14px;margin:8px 0;display:none}
+.msg.err{display:block;background:#f7e3dd;color:#8a3a28}
+.msg.ok{display:block;background:#d9efe7;color:#1d6c4f}
+.refresh{font-size:13px;color:var(--muted);margin-top:8px}
+svg text{font-family:"Trebuchet MS","Lato",sans-serif}
+
+/* ============ analytics loader ============ */
+.loader{position:fixed;inset:0;background:rgba(238,241,244,.94);display:grid;place-items:center;z-index:60}
+.loader .box{text-align:center}
+.bars{display:flex;gap:9px;align-items:flex-end;height:74px;justify-content:center}
+.bars i{width:15px;border-radius:5px 5px 2px 2px;animation:grow 1.05s ease-in-out infinite}
+.bars i:nth-child(1){background:var(--slate);animation-delay:0s}
+.bars i:nth-child(2){background:var(--teal);animation-delay:.14s}
+.bars i:nth-child(3){background:var(--amber);animation-delay:.28s}
+.bars i:nth-child(4){background:var(--coral);animation-delay:.42s}
+.bars i:nth-child(5){background:var(--slate);animation-delay:.56s}
+@keyframes grow{0%,100%{height:18%}50%{height:100%}}
+.loader p{margin-top:18px;font-weight:800;color:var(--slate);letter-spacing:1px}
+
+/* ============ login (unchanged look) ============ */
+.login-wrap{min-height:100vh;display:grid;place-items:center;padding:24px;position:relative;
+  background:#dfe4e8 url('/login.png') center/cover no-repeat}
+.login-wrap::before{content:"";position:absolute;inset:0;background:rgba(244,246,248,.72)}
+.login{position:relative;width:100%;max-width:620px;text-align:center;
+  font-family:"Trebuchet MS","Lato","Segoe UI",sans-serif}
+.login .logo{height:74px;margin:0 auto 6px;display:block}
+.login .wordmark{font-size:20px;font-weight:800;letter-spacing:6px;color:#3d5666}
+.login .wordmark span{color:#8fa8b2}
+.login h1{font-size:30px;font-weight:800;letter-spacing:10px;color:#3d5666;margin:26px 0 30px}
+.login h1 span{color:#5cbcb6}
+.login .field{position:relative;margin:0 0 26px}
+.login .field svg{position:absolute;left:24px;top:50%;transform:translateY(-50%);width:22px;height:22px;
+  stroke:#3d5666;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.login input{width:100%;padding:19px 58px;border:2px solid #35505f;border-radius:999px;
+  background:rgba(255,255,255,.55);font:inherit;font-size:17px;color:#25333d}
+.login input::placeholder{color:#4d6674}
+.login .eye{position:absolute;right:20px;top:50%;transform:translateY(-50%);background:none;border:0;padding:4px;line-height:0}
+.login .eye svg{position:static;transform:none}
+.login .btn{width:100%;padding:18px;border-radius:999px;background:#35505f;font-size:18px;letter-spacing:.5px}
+.login .demo{margin-top:30px;text-align:left;background:rgba(255,255,255,.62);backdrop-filter:blur(3px);
+  border-radius:14px;padding:16px 20px;font-size:14px;color:#25333d;line-height:2}
+.login .demo code{background:rgba(255,255,255,.85);color:#25333d;padding:2px 8px;border-radius:5px;
+  font:13px ui-monospace,Consolas,monospace}
+.login .msg{text-align:left}
+
+/* mobile */
+@media (max-width: 920px){
+  .shell{grid-template-columns:1fr}
+  aside{position:fixed;left:0;top:0;bottom:0;width:290px;z-index:50;transform:translateX(-102%);
+    transition:transform .25s ease;box-shadow:6px 0 24px rgba(0,0,0,.18)}
+  aside.open{transform:none}
+  .burger{display:block}
+  main{padding:18px 14px 30px}
+}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+"use strict";
+const $ = (s, el=document) => el.querySelector(s);
+const S = { token: sessionStorage.getItem("tok") || "", role: sessionStorage.getItem("role") || "",
+            name: sessionStorage.getItem("name") || "", tab: "", clientId: null, clients: [], timer: null };
+
+async function api(path, body, method){
+  const r = await fetch(path, { method: method || (body ? "POST" : "GET"),
+    headers: { "Content-Type": "application/json", ...(S.token ? { Authorization: "Bearer " + S.token } : {}) },
+    body: body ? JSON.stringify(body) : undefined });
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(d.error || ("Request failed (" + r.status + ")"));
+  return d;
+}
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmtDT = s => s ? s.replace("T", " ").slice(0, 16) : "—";
+
+/* ---------------- analytics loader ---------------- */
+function showLoader(msg){
+  hideLoader();
+  const d = document.createElement("div");
+  d.className = "loader"; d.id = "loader";
+  d.innerHTML = `<div class="box"><div class="bars"><i></i><i></i><i></i><i></i><i></i></div>
+    <p>${esc(msg || "Crunching your numbers…")}</p></div>`;
+  document.body.appendChild(d);
+}
+function hideLoader(){ const l = $("#loader"); if (l) l.remove(); }
+
+/* ---------------- icons ---------------- */
+const IC = {
+  grid:'<svg viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></svg>',
+  eye:'<svg viewBox="0 0 24 24"><path d="M1.5 12s4-7 10.5-7 10.5 7 10.5 7-4 7-10.5 7S1.5 12 1.5 12z"/><circle cx="12" cy="12" r="3"/></svg>',
+  chart:'<svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-8M21 20H3"/></svg>',
+  pulse:'<svg viewBox="0 0 24 24"><path d="M2.5 12h4l2.5-7 4.5 14 2.5-7h5.5"/></svg>',
+  plug:'<svg viewBox="0 0 24 24"><path d="M9 3v5M15 3v5M7 8h10v3a5 5 0 0 1-5 5 5 5 0 0 1-5-5V8zM12 16v5"/></svg>',
+  home:'<svg viewBox="0 0 24 24"><path d="M4 11l8-7 8 7M6 9.5V20h12V9.5M10 20v-5h4v5"/></svg>'
+};
+const TITLES = { clients:["Overview",IC.grid], overview:["Bird's Eye View",IC.eye],
+  analysis:["In-Depth Analysis",IC.chart], live:["Live from the Premises",IC.pulse],
+  connection:["Data & Connection",IC.plug] };
+
+/* ---------------- tiny SVG chart kit ---------------- */
+function lineChart(series, {w=560, h=230, unit=""}={}){
+  if (!series.length) return '<div class="empty">No data yet</div>';
+  const pad = {l:44, r:18, t:22, b:44};
+  const max = Math.max(...series.map(p=>p.v), 1);
+  const X = i => pad.l + i * (w - pad.l - pad.r) / Math.max(series.length - 1, 1);
+  const Y = v => pad.t + (1 - v / max) * (h - pad.t - pad.b);
+  let path = "";
+  series.forEach((p,i)=>{
+    const x=X(i), y=Y(p.v);
+    if(!i){ path=`M${x},${y}`; return; }
+    const px=X(i-1), py=Y(series[i-1].v), cx=(px+x)/2;
+    path += ` C${cx},${py} ${cx},${y} ${x},${y}`;
+  });
+  const dots = series.map((p,i)=>`<circle cx="${X(i)}" cy="${Y(p.v)}" r="4.5" fill="#fff" stroke="#5cbcb6" stroke-width="2.2"/>
+    <text x="${X(i)}" y="${Y(p.v)-10}" font-size="11" text-anchor="middle" fill="#3d5666" font-weight="700">${esc(p.v+unit)}</text>`).join("");
+  const labels = series.map((p,i)=>`<text x="${X(i)}" y="${h-16}" font-size="11" text-anchor="middle" fill="#7d8fa0">${esc(p.l)}</text>`).join("");
+  const gy = [0,.5,1].map(f=>{const y=Y(max*f);return `<line x1="${pad.l}" y1="${y}" x2="${w-pad.r}" y2="${y}" stroke="#e3e9ee" stroke-dasharray="3 4"/>
+    <text x="${pad.l-8}" y="${y+4}" font-size="10.5" text-anchor="end" fill="#9aabb8">${Math.round(max*f)}</text>`}).join("");
+  return `<svg viewBox="0 0 ${w} ${h}" role="img" style="width:100%;height:auto">${gy}
+    <path d="${path}" fill="none" stroke="#5cbcb6" stroke-width="2.6"/>${dots}${labels}</svg>`;
+}
+const PAL = ["#3d5666","#5cbcb6","#e0a83f","#dd6b4d","#8fa8b2","#7b93f0","#b087b4","#54b98d"];
+function hbar(items, {w=560, colors=null, unit="", pct=false}={}){
+  if (!items.length) return '<div class="empty">No data yet</div>';
+  const total = items.reduce((a,b)=>a+b.c,0) || 1;
+  const rowH=38, pad={l:158,r:28,t:6}, h=pad.t+items.length*rowH+8;
+  const max=Math.max(...items.map(i=>i.c),1);
+  const cols = colors || PAL;
+  return `<svg viewBox="0 0 ${w} ${h}" role="img" style="width:100%;height:auto">` + items.map((it,i)=>{
+    const y=pad.t+i*rowH, bw=Math.max((w-pad.l-pad.r)*it.c/max, 28);
+    const lab = pct ? Math.round(it.c/total*100)+"%" : it.c+unit;
+    return `<text x="${pad.l-8}" y="${y+22}" font-size="12.5" text-anchor="end" fill="#25333d" font-weight="700">${esc(String(it.label).slice(0,20))}</text>
+      <rect x="${pad.l}" y="${y+5}" width="${bw}" height="${rowH-13}" rx="5" fill="${cols[i%cols.length]}"/>
+      <text x="${pad.l+bw/2}" y="${y+21}" font-size="11.5" text-anchor="middle" fill="#fff" font-weight="800">${lab}</text>`;
+  }).join("") + "</svg>";
+}
+function vbar(items, {w=560,h=250,unit=""}={}){
+  if (!items.length) return '<div class="empty">No data yet</div>';
+  const pad={l:46,r:14,t:26,b:66}; const max=Math.max(...items.map(i=>i.c),1);
+  const bw=(w-pad.l-pad.r)/items.length;
+  return `<svg viewBox="0 0 ${w} ${h}" role="img" style="width:100%;height:auto">` + items.map((it,i)=>{
+    const bh=(h-pad.t-pad.b)*it.c/max, x=pad.l+i*bw+bw*0.14, y=h-pad.b-bh;
+    return `<rect x="${x}" y="${y}" width="${bw*0.72}" height="${bh}" rx="5" fill="${PAL[i%PAL.length]}"/>
+      <text x="${x+bw*0.36}" y="${y+18>h-pad.b?y-6:y+20}" font-size="11" text-anchor="middle" fill="${y+18>h-pad.b?'#25333d':'#fff'}" font-weight="800">${it.c}${unit}</text>
+      <text x="${x+bw*0.36}" y="${h-pad.b+14}" font-size="10.5" text-anchor="end" fill="#7d8fa0" transform="rotate(-32 ${x+bw*0.36} ${h-pad.b+14})">${esc(String(it.label).slice(0,16))}</text>`;
+  }).join("") + "</svg>";
+}
+function donut(items, {w=560,h=250}={}){
+  if (!items.length) return '<div class="empty">Nobody is on the premises right now</div>';
+  const total=items.reduce((a,b)=>a+b.c,0), cx=w/2, cy=h/2, R=Math.min(w,h)/2-26, r=R*0.58;
+  let a0=-Math.PI/2, out="";
+  items.forEach((it,i)=>{
+    const a1=a0+2*Math.PI*it.c/total, big=(a1-a0)>Math.PI?1:0;
+    const p=(a,rr)=>[cx+rr*Math.cos(a),cy+rr*Math.sin(a)];
+    const [x0,y0]=p(a0,R),[x1,y1]=p(a1,R),[x2,y2]=p(a1,r),[x3,y3]=p(a0,r);
+    out+=`<path d="M${x0},${y0} A${R},${R} 0 ${big} 1 ${x1},${y1} L${x2},${y2} A${r},${r} 0 ${big} 0 ${x3},${y3} Z" fill="${PAL[i%PAL.length]}"/>`;
+    const mid=(a0+a1)/2,[lx,ly]=p(mid,R+14);
+    out+=`<text x="${lx}" y="${ly}" font-size="11" text-anchor="${lx>cx?"start":"end"}" fill="#25333d">${esc(it.label)} (${it.c})</text>`;
+    a0=a1;
+  });
+  return `<svg viewBox="0 0 ${w} ${h}" role="img" style="width:100%;height:auto">${out}
+    <text x="${cx}" y="${cy+6}" font-size="17" font-weight="800" text-anchor="middle" fill="#25333d">${total}</text></svg>`;
+}
+
+/* ---------------- login ---------------- */
+function renderLogin(err){
+  const eyeOpen='<svg viewBox="0 0 24 24"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>';
+  const eyeOff='<svg viewBox="0 0 24 24"><path d="M17.94 17.94A10.9 10.9 0 0 1 12 19c-7 0-11-7-11-7a20.7 20.7 0 0 1 5.06-5.94M9.9 4.24A10.4 10.4 0 0 1 12 4c7 0 11 7 11 7a20.8 20.8 0 0 1-3.22 4.19M1 1l22 22"/></svg>';
+  document.body.innerHTML = `<div class="login-wrap"><form class="login" id="loginForm">
+    <img class="logo" src="/logo.png" alt="StatsPack" onerror="this.style.display='none'">
+    <div class="wordmark">STATS<span>PACK</span></div>
+    <h1>ANALYTICS <span>LAB</span></h1>
+    <div class="msg err" ${err?'style="display:block"':""}>${esc(err||"")}</div>
+    <div class="field">
+      <svg viewBox="0 0 24 24"><rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="M3 6.5l9 7 9-7"/></svg>
+      <input id="em" type="email" placeholder="Email" autocomplete="username" aria-label="Email" required>
+    </div>
+    <div class="field">
+      <svg viewBox="0 0 24 24"><rect x="4.5" y="10.5" width="15" height="10" rx="2.5"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></svg>
+      <input id="pw" type="password" placeholder="Password" autocomplete="current-password" aria-label="Password" required>
+      <button class="eye" type="button" id="eyeBtn" aria-label="Show password">${eyeOpen}</button>
+    </div>
+    <button class="btn" type="submit">Sign In</button>
+    <div class="demo"><b>Demo accounts</b> (password after the slash)<br>
+      Super user — <code>admin@statspack.co.ls / super123</code><br>
+      Client admin — <code>admin@demo.client / admin123</code></div>
+  </form></div>`;
+  $("#eyeBtn").onclick = ()=>{ const p=$("#pw"), show=p.type==="password";
+    p.type=show?"text":"password"; $("#eyeBtn").innerHTML=show?eyeOff:eyeOpen;
+    $("#eyeBtn").setAttribute("aria-label", show?"Hide password":"Show password"); };
+  $("#loginForm").addEventListener("submit", async e=>{
+    e.preventDefault();
+    showLoader("Signing you in…");
+    try{
+      const d = await api("/api/login", { email:$("#em").value, password:$("#pw").value });
+      S.token=d.token; S.role=d.role; S.name=d.name;
+      sessionStorage.setItem("tok",d.token); sessionStorage.setItem("role",d.role); sessionStorage.setItem("name",d.name);
+      S.tab = d.role==="super" ? "clients" : "overview";
+      await boot();
+    }catch(ex){ hideLoader(); renderLogin(ex.message); }
+  });
+}
+
+/* ---------------- shell ---------------- */
+function navBtn(k){ const [label, icon] = TITLES[k];
+  return `<button class="nitem ${S.tab===k?"on":""}" data-t="${k}">${icon}<span>${label}</span></button>`; }
+
+function shell(){
+  const isSuper = S.role==="super";
+  const org = isSuper ? "StatsPack · HQ"
+    : esc((S.clients.find(c=>c.id==S.clientId)||{}).name || "Client");
+  const picker = isSuper && S.clients.length ? `<div class="clientbox"><label for="clientPick">VIEWING CLIENT</label>
+      <select id="clientPick">${S.clients.map(c=>`<option value="${c.id}" ${c.id==S.clientId?"selected":""}>${esc(c.name)}${c.active?"":" (suspended)"}</option>`).join("")}</select></div>` : "";
+  const [title, icon] = TITLES[S.tab] || ["",""];
+  document.body.innerHTML = `<div class="shell">
+   <aside id="sidebar">
+    <div class="profile">
+      <img src="/logo.png" alt="" onerror="this.style.display='none'">
+      <div class="wm">STATS<span>PACK</span></div>
+      <div class="nm">${esc(S.name)}</div>
+      <div class="org">${org}</div>
+      <div class="em">${isSuper?"StatsPack super user":"Client admin"}</div>
+    </div>
+    ${picker}
+    ${isSuper?`<div class="navsec">PLATFORM</div>${navBtn("clients")}`:""}
+    <div class="navsec">DASHBOARDS</div>
+    ${navBtn("overview")}${navBtn("analysis")}${navBtn("live")}
+    <div class="navsec">DATA</div>
+    ${navBtn("connection")}
+    <div class="sideout"><button class="btn" id="out">Sign out</button>
+      <div class="vtag">Analytics Lab · v1</div></div>
+   </aside>
+   <div>
+    <div class="topbar">
+      <button class="burger" id="burger" aria-label="Menu">☰</button>
+      <h1>${icon}<span>${esc(title)}</span></h1>
+    </div>
+    <main id="view"></main>
+   </div>
+  </div>`;
+  $("#out").onclick = ()=>{ sessionStorage.clear(); location.reload(); };
+  $("#burger").onclick = ()=> $("#sidebar").classList.toggle("open");
+  document.querySelectorAll(".nitem").forEach(b=>b.onclick=()=>{ S.tab=b.dataset.t; $("#sidebar").classList.remove("open"); draw(); });
+  const cp=$("#clientPick"); if(cp) cp.onchange=()=>{ S.clientId=+cp.value; draw(); };
+}
+const q = () => S.role==="super" ? "?client_id="+S.clientId : "";
+function stopTimer(){ if(S.timer){ clearInterval(S.timer); S.timer=null; } }
+
+async function draw(quiet){
+  stopTimer(); shell();
+  if(!quiet) showLoader();
+  const v=$("#view");
+  try{
+    if (S.tab==="overview") await drawOverview(v);
+    else if (S.tab==="analysis") await drawAnalysis(v);
+    else if (S.tab==="live") await drawLive(v);
+    else if (S.tab==="connection") await drawConnection(v);
+    else if (S.tab==="clients") await drawClients(v);
+  }catch(ex){
+    if (/log in/i.test(ex.message)) { hideLoader(); sessionStorage.clear(); return renderLogin("Session expired — sign in again"); }
+    v.innerHTML = `<div class="msg err" style="display:block">${esc(ex.message)}</div>`;
+  }
+  hideLoader();
+}
+
+/* ---------------- Bird's Eye View ---------------- */
+async function drawOverview(v){
+  const d = await api("/api/stats/overview"+q());
+  const ch = d.change_pct;
+  const cmp = ch===null ? `<div class="kpi k-slate"><div class="lbl">vs Last Month</div><div class="rule"></div>
+      <div class="val">—</div><div class="sub">No visits last month</div></div>`
+    : `<div class="kpi k-slate"><div class="lbl">vs Last Month</div><div class="rule"></div>
+       <div class="val ${ch<0?"down":"up"}">${ch<0?"↓":"↑"} ${Math.abs(ch)}%</div>
+       <div class="sub">${esc(d.this_month.label)}: ${d.this_month.count} · ${esc(d.last_month.label)}: ${d.last_month.count}</div></div>`;
+  v.innerHTML = `
+   <div class="kpis">
+     <div class="kpi k-slate"><div class="lbl">Total Visitors</div><div class="rule"></div><div class="val">${d.total}</div></div>
+     <div class="kpi k-teal"><div class="lbl">Unique Visitors</div><div class="rule"></div><div class="val">${d.unique}</div></div>
+     <div class="kpi k-amber"><div class="lbl">Visitors Today</div><div class="rule"></div><div class="val">${d.today}</div></div>
+     <div class="kpi k-coral"><div class="lbl">Ongoing Visits</div><div class="rule"></div><div class="val">${d.ongoing}</div></div>
+     ${cmp}
+   </div>
+   <div class="kpis" style="margin-top:20px">
+     <div class="kpi k-teal"><div class="lbl">Avg Visits / Day</div><div class="rule"></div><div class="val">${d.avg_per_day}</div></div>
+     <div class="kpi k-slate"><div class="lbl">Avg Visit Duration</div><div class="rule"></div><div class="val">${d.avg_duration}<span style="font-size:19px"> mins</span></div></div>
+     <div class="kpi k-coral"><div class="lbl">Highest Visits</div><div class="rule"></div>
+       <div class="val">${d.highest?d.highest.count:"—"}</div><div class="sub">${d.highest?"On "+esc(d.highest.date):""}</div></div>
+     <div class="kpi k-amber"><div class="lbl">Lowest Visits</div><div class="rule"></div>
+       <div class="val">${d.lowest?d.lowest.count:"—"}</div><div class="sub">${d.lowest?"On "+esc(d.lowest.date):""}</div></div>
+   </div>
+   <div class="grid2">
+     <div class="panel"><h2>Monthly Footfall: Overall</h2>${lineChart(d.monthly.map(m=>({l:m.month,v:m.count})))}</div>
+     <div class="panel"><h2>Current Month's Footfall</h2>${lineChart(d.current_month_daily.map(x=>({l:x.d.slice(8)+" "+d.this_month.label.slice(0,3),v:x.c})))}</div>
+     <div class="panel"><h2>Top 5 Regions Visited</h2>${hbar(d.top_regions.map(r=>({label:r.label,c:r.c})),{pct:true})}</div>
+     <div class="panel"><h2>Top 5 Purposes of Visit</h2>${hbar(d.top_purposes.map(r=>({label:r.label,c:r.c})),{pct:true})}</div>
+   </div>`;
+}
+
+/* ---------------- In-Depth ---------------- */
+async function drawAnalysis(v){
+  const d = await api("/api/stats/analysis"+q());
+  v.innerHTML = `
+   <div class="grid2" style="margin-top:0">
+     <div class="panel"><h2>Regions and Visitors</h2>${hbar(d.region_visitors)}</div>
+     <div class="panel"><h2>Regions with high Visit Duration</h2>${hbar(d.region_duration,{unit:" mins"})}</div>
+     <div class="panel"><h2>Top 5 Departments by Visitor Footfall</h2>${hbar(d.dept_footfall,{pct:true})}</div>
+     <div class="panel"><h2>Departments taking the most time</h2>
+       ${lineChart(d.dept_duration.map(x=>({l:String(x.label).slice(0,12),v:x.c})),{unit:" m"})}</div>
+     <div class="panel"><h2>Visits taking the most time</h2>${vbar(d.purpose_duration,{unit:" mins"})}</div>
+     <div class="panel"><h2>Hours with highest Visitor Footfall</h2>
+       ${lineChart(d.hourly.map(x=>({l:(x.hour%12||12)+(x.hour<12?" AM":" PM"),v:x.c})))}</div>
+   </div>`;
+}
+
+/* ---------------- Live ---------------- */
+async function drawLive(v){
+  const render = async () => {
+    const d = await api("/api/stats/live"+q());
+    const rows = d.ongoing.map(o=>`<tr><td class="b">${esc(o.visitor_name)}</td><td>${esc(o.region)} · ${esc(o.town)}</td>
+      <td>${esc(o.host_department)}</td><td>${esc(o.purpose)}</td><td>${esc(o.id_number)}</td>
+      <td>${esc(o.contact)}</td><td><span class="score">${o.elapsed} mins</span></td></tr>`).join("");
+    const exc = d.exceeding.map(o=>`<tr><td class="b">${esc(o.visitor_name)}</td><td>${esc(o.region)} · ${esc(o.town)}</td>
+      <td>${esc(o.host_department)}</td><td><span class="chip" style="margin:0">Ongoing</span></td>
+      <td><span class="score bad">${o.elapsed} mins</span></td></tr>`).join("");
+    $("#view").innerHTML = `
+     <div class="grid2" style="margin-top:0">
+       <div class="panel"><h2>Purpose for Ongoing Visits</h2>${donut(d.purposes)}</div>
+       <div class="panel"><h2>Ongoing Visits by Region</h2>
+         ${hbar(Object.entries(d.ongoing.reduce((a,o)=>{a[o.region]=(a[o.region]||0)+1;return a;},{}))
+                .map(([label,c])=>({label,c})))}</div>
+     </div>
+     <div class="panel"><h2>Current On-Premises Visitors</h2>
+       ${d.ongoing.length?`<div style="overflow-x:auto"><table><thead><tr><th>Visitor</th><th>Region · Town</th>
+        <th>Host Department</th><th>Purpose</th><th>ID Number</th><th>Contact</th><th>Elapsed</th></tr></thead>
+        <tbody>${rows}</tbody></table></div>`:'<div class="empty">Nobody is on the premises right now</div>'}</div>
+     <div class="panel"><h2>Visitors Exceeding Allowed Duration (${d.max_mins} mins)</h2>
+       ${d.exceeding.length?`<div style="overflow-x:auto"><table><thead><tr><th>Visitor</th><th>Region · Town</th>
+        <th>Host Department</th><th>Status</th><th>Duration</th></tr></thead>
+        <tbody>${exc}</tbody></table></div>`:'<div class="empty">No visitor has exceeded the allowed duration</div>'}</div>
+     <p class="refresh">Auto-refreshes every 15 seconds · Last updated ${new Date().toLocaleTimeString()}</p>`;
+  };
+  await render();
+  S.timer = setInterval(()=>{ if(S.tab==="live") render().catch(()=>{}); }, 15000);
+}
+
+/* ---------------- Data & Connection ---------------- */
+async function drawConnection(v){
+  const d = await api("/api/connection"+q());
+  const base = location.origin;
+  v.innerHTML = `
+   <div class="grid2" style="margin-top:0">
+    <div class="panel"><h2>Connect the VMS (real-time)</h2>
+      <p class="note">Point the VMS real-time export at this endpoint. Every check-in and check-out it sends
+      appears here instantly. Re-sending the same <code class="inline">visit_id</code> updates that visit —
+      that's how a checkout lands.</p>
+      <p style="margin:12px 0 4px;font-weight:800;font-size:14px;color:var(--slate)">API key</p>
+      <div class="row"><code class="inline" id="apiKey" style="word-break:break-all">${esc(d.api_key)}</code>
+        <button class="btn small ghost" id="copyKey">Copy</button></div>
+      <p style="margin:14px 0 4px;font-weight:800;font-size:14px;color:var(--slate)">Push a visit (JSON)</p>
+<pre>curl -X POST ${base}/ingest/visits \\
+  -H "X-API-Key: ${esc(d.api_key)}" \\
+  -H "Content-Type: application/json" \\
+  -d '{"visit_id":"VMS-2041","visitor_name":"Thabo M.",
+       "region":"Maseru","town":"Maseru",
+       "host_department":"Customer Service",
+       "purpose":"Enquiry","check_in":"2026-07-19T09:05:00"}'</pre>
+      <p style="margin:12px 0 4px;font-weight:800;font-size:14px;color:var(--slate)">Or stream the VMS CSV export as-is</p>
+<pre>curl -X POST ${base}/ingest/visits \\
+  -H "X-API-Key: ${esc(d.api_key)}" \\
+  -H "Content-Type: text/csv" \\
+  --data-binary @vms_export.csv</pre>
+      <p class="note">Test the link any time: <code class="inline">GET ${base}/ingest/ping</code> with the same key.</p>
+    </div>
+    <div style="min-width:0">
+     <div class="panel" style="margin-top:0"><h2>Backfill: upload a CSV export</h2>
+      <p class="note">For history that predates the live connection. Headers are matched flexibly
+      (visit_id, visitor name, region, town, department, purpose, check_in, check_out…).</p>
+      <div class="msg" id="upMsg"></div>
+      <input type="file" id="csvFile" accept=".csv,text/csv" aria-label="CSV file" style="margin-top:8px">
+      <button class="btn" id="upBtn" style="margin-top:12px">Upload CSV</button>
+     </div>
+     <div class="panel"><h2>Allowed visit duration</h2>
+      <p class="note">Ongoing visits longer than this appear under "Visitors Exceeding Allowed Duration".</p>
+      <div class="row" style="margin-top:10px"><input id="maxMins" type="number" min="5" max="720" value="${d.max_visit_mins}" style="width:110px"> mins
+      <button class="btn small" id="saveMins">Save</button></div>
+      <div class="msg" id="minsMsg"></div>
+     </div>
+     <div class="panel"><h2>Recent data received</h2>
+      ${d.log.length?`<div style="overflow-x:auto"><table><thead><tr><th>When</th><th>Source</th><th>Rows</th><th>New</th><th>Upd</th><th>Err</th></tr></thead>
+       <tbody>${d.log.map(l=>`<tr><td>${fmtDT(l.ts)}</td><td>${esc(l.source)}</td><td>${l.rows_in}</td>
+        <td>${l.inserted}</td><td>${l.updated}</td><td>${l.errors?`<span class="score bad">${l.errors}</span>`:0}</td></tr>`).join("")}</tbody></table></div>`
+       :'<div class="empty">Nothing received yet — connect the VMS or upload a CSV</div>'}
+     </div>
+    </div>
+   </div>`;
+  $("#copyKey").onclick = ()=>{ navigator.clipboard.writeText(d.api_key); $("#copyKey").textContent="Copied"; };
+  $("#saveMins").onclick = async ()=>{
+    const m=$("#minsMsg");
+    try{ await api("/api/connection/settings"+q(),{max_visit_mins:+$("#maxMins").value}); m.className="msg ok"; m.textContent="Saved"; }
+    catch(ex){ m.className="msg err"; m.textContent=ex.message; }
+  };
+  $("#upBtn").onclick = async ()=>{
+    const f=$("#csvFile").files[0], m=$("#upMsg");
+    if(!f){ m.className="msg err"; m.textContent="Choose a CSV file first"; return; }
+    try{
+      const text = await f.text();
+      const r = await api("/api/connection/upload"+q(), {csv:text});
+      m.className="msg ok"; m.textContent=`Received ${r.received} rows — ${r.inserted} new, ${r.updated} updated, ${r.errors} errors`;
+    }catch(ex){ m.className="msg err"; m.textContent=ex.message; }
+  };
+}
+
+/* ---------------- Super: Overview (Client console) ---------------- */
+async function drawClients(v){
+  const d = await api("/api/super/clients");
+  S.clients = d.clients;
+  const totals = d.clients.reduce((a,c)=>({v:a.v+c.visits,o:a.o+c.ongoing,ad:a.ad+c.admins}),{v:0,o:0,ad:0});
+  v.innerHTML = `
+   <div class="kpis">
+    <div class="kpi k-slate"><div class="lbl">Clients</div><div class="rule"></div><div class="val">${d.clients.length}</div></div>
+    <div class="kpi k-teal"><div class="lbl">Total Visits</div><div class="rule"></div><div class="val">${totals.v}</div></div>
+    <div class="kpi k-amber"><div class="lbl">On Premises Now</div><div class="rule"></div><div class="val">${totals.o}</div></div>
+    <div class="kpi k-coral"><div class="lbl">Client Admins</div><div class="rule"></div><div class="val">${totals.ad}</div></div>
+   </div>
+   <div class="panel"><h2>Clients at a glance</h2>
+    <div class="msg" id="cMsg"></div>
+    <div style="overflow-x:auto"><table><thead><tr><th>Client</th><th>Visits</th><th>On premises</th>
+     <th>Admins</th><th>Last data received</th><th>API key</th><th></th></tr></thead><tbody>
+    ${d.clients.map(c=>`<tr>
+      <td class="b">${esc(c.name)}<span class="chip">${c.active?"Active":"Suspended"}</span></td>
+      <td>${c.visits}</td><td>${c.ongoing}</td><td>${c.admins}</td>
+      <td>${fmtDT(c.last_ingest)}</td>
+      <td><code class="inline" style="word-break:break-all">${esc(c.api_key)}</code></td>
+      <td style="white-space:nowrap">
+        <button class="btn small ghost" data-view="${c.id}">Dashboards</button>
+        <button class="btn small ghost" data-admins="${c.id}" data-name="${esc(c.name)}">Admins</button>
+        <button class="btn small ghost" data-rotate="${c.id}">Rotate key</button>
+        <button class="btn small ${c.active?"warn":""}" data-toggle="${c.id}">${c.active?"Suspend":"Reactivate"}</button>
+      </td></tr>`).join("")}
+    </tbody></table></div>
+    <div class="row" style="margin-top:16px"><input id="cName" placeholder="New client / company name" style="max-width:320px">
+     <button class="btn" id="cAdd">Create client</button></div>
+    <p class="note" style="margin-top:8px">Creating a client issues an API key. Give the key to the client's VMS
+     installation, then add an admin login so they can see their dashboards.</p>
+   </div>
+   <div id="adminPanel"></div>`;
+  $("#cAdd").onclick = async ()=>{
+    const m=$("#cMsg");
+    try{ await api("/api/super/clients",{name:$("#cName").value}); draw(); }
+    catch(ex){ m.className="msg err"; m.textContent=ex.message; }
+  };
+  v.querySelectorAll("[data-view]").forEach(b=>b.onclick=()=>{ S.clientId=+b.dataset.view; S.tab="overview"; draw(); });
+  v.querySelectorAll("[data-toggle]").forEach(b=>b.onclick=async()=>{ await api(`/api/super/clients/${b.dataset.toggle}/toggle`,{},"POST"); draw(); });
+  v.querySelectorAll("[data-rotate]").forEach(b=>b.onclick=async()=>{
+    if(confirm("Rotate this client's API key? The old key stops working immediately.")){
+      await api(`/api/super/clients/${b.dataset.rotate}/rotate_key`,{},"POST"); draw(); } });
+  v.querySelectorAll("[data-admins]").forEach(b=>b.onclick=()=>showAdmins(+b.dataset.admins, b.dataset.name));
+}
+async function showAdmins(cid, cname){
+  const d = await api(`/api/super/clients/${cid}/admins`);
+  $("#adminPanel").innerHTML = `
+   <div class="panel"><h2>Admin logins — ${esc(cname)}</h2>
+    <div class="msg" id="aMsg"></div>
+    <div class="row"><input id="aName" placeholder="Name" style="max-width:180px">
+     <input id="aEmail" type="email" placeholder="Email" style="max-width:230px">
+     <input id="aPw" type="password" placeholder="Password (6+ chars)" style="max-width:200px">
+     <button class="btn" id="aAdd">Add admin</button></div>
+    ${d.admins.length?`<table style="margin-top:12px"><thead><tr><th>Name</th><th>Email</th><th>Status</th><th></th></tr></thead><tbody>
+     ${d.admins.map(a=>`<tr><td class="b">${esc(a.name)}</td><td>${esc(a.email)}</td>
+      <td><span class="chip" style="margin:0">${a.active?"Active":"Disabled"}</span></td>
+      <td><button class="btn small ghost" data-tg="${a.id}">${a.active?"Disable":"Enable"}</button></td></tr>`).join("")}
+    </tbody></table>`:'<div class="empty">No admin logins yet — add the first one above</div>'}
+   </div>`;
+  $("#aAdd").onclick = async ()=>{
+    const m=$("#aMsg");
+    try{ await api(`/api/super/clients/${cid}/admins`,{name:$("#aName").value,email:$("#aEmail").value,password:$("#aPw").value});
+         showAdmins(cid,cname); }
+    catch(ex){ m.className="msg err"; m.textContent=ex.message; }
+  };
+  document.querySelectorAll("[data-tg]").forEach(b=>b.onclick=async()=>{ await api(`/api/super/admins/${b.dataset.tg}/toggle`,{},"POST"); showAdmins(cid,cname); });
+}
+
+/* ---------------- boot ---------------- */
+async function boot(){
+  if(!S.token){ hideLoader(); return renderLogin(); }
+  if(S.role==="super"){
+    try{ const d = await api("/api/super/clients"); S.clients=d.clients;
+         if(!S.clientId && d.clients.length) S.clientId=d.clients[0].id;
+         if(!S.tab) S.tab="clients";
+    }catch(ex){ hideLoader(); sessionStorage.clear(); return renderLogin(); }
+  } else if(!S.tab || S.tab==="clients"){ S.tab="overview"; }
+  await draw(true);
+}
+boot();
+</script>
+</body>
+</html>
