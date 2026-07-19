@@ -1,2 +1,0 @@
-# No external dependencies — StatsPack Analytics Lab runs on the Python standard library.
-# This file exists so Render's Python environment detects and builds the project.
