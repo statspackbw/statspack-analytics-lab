@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: statspack-analytics-lab
+    runtime: python
+    plan: starter            # change to "free" to test (note: free instances have no disk, DB resets on deploy)
+    buildCommand: pip install -r requirements.txt
+    startCommand: python3 server.py
+    envVars:
+      - key: DB_PATH
+        value: /var/data/analyticslab.db
+    disk:
+      name: analyticslab-data
+      mountPath: /var/data
+      sizeGB: 1
