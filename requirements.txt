@@ -1,0 +1,4 @@
+# Analytics Lab runs on the Python standard library alone when using SQLite (the default).
+#
+# Install this ONLY if you set DATABASE_URL to a Postgres/Neon connection string:
+psycopg[binary]>=3.1
