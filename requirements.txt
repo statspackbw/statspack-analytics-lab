@@ -1,0 +1,9 @@
+# Analytics Lab runs on the Python standard library alone with SQLite storage.
+# These are needed only for the features noted:
+
+# Postgres / Neon storage — required whenever DATABASE_URL is set.
+# Without this the app cannot connect to Neon and will refuse to start.
+psycopg[binary]>=3.1
+
+# Firebase single sign-on from SmartRegister — required for /api/sso/firebase.
+firebase-admin>=6.0,<8.0
